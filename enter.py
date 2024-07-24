@@ -26,7 +26,7 @@ def main():
     # User inputs
     start_date_str = input("Enter the starting date (YYYY-MM-DD): ")
     end_date_str = input("Enter the ending date (YYYY-MM-DD): ")
-    max_offset = int(input("Enter the maximum offset: "))
+    max_offset = int(input("Enter the maximum visits in a day: "))
 
     # Parse dates
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')

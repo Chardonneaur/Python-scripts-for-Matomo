@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
+from tqdm import tqdm
 
 # Function to generate a list of dates between two dates
 def generate_dates(start_date, end_date):
@@ -41,12 +42,14 @@ def main():
     # Loop through dates and fetch data with incremental offsets
     for date in dates:
         offset = 0
-        while offset <= max_offset:
-            data = fetch_data(date, offset)
-            if not data:
-                break
-            all_data.extend(data)
-            offset += 10000
+        with tqdm(total=max_offset, desc=f'Processing date {date}', unit='offset', ncols=100) as pbar:
+            while offset <= max_offset:
+                data = fetch_data(date, offset)
+                if not data:
+                    break
+                all_data.extend(data)
+                offset += 10000
+                pbar.update(10000)
 
     # Extract URLs where type is 'action'
     url_count = {}

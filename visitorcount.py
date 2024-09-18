@@ -14,7 +14,7 @@ def generate_dates(start_date, end_date):
 
 # Function to fetch data from the provided URL with a given date and offset
 def fetch_data(date, offset):
-    url = f"https://demo.matomo.cloud/index.php?module=API&format=JSON&idSite=62&period=day&date={date}&method=Live.getLastVisitsDetails&expanded=1&token_auth=anonymous&showColumns=visitorId&filter_limit=10000&filter_offset={offset}"
+    url = f"https://demo.matomo.cloud/index.php?module=API&format=JSON&idSite=62&period=day&date={date}&method=Live.getLastVisitsDetails&expanded=1&token_auth=anonymous&showColumns=serverDatePretty,visitorId&filter_limit=10000&filter_offset={offset}"
     response = requests.get(url)
     
     if response.status_code == 200:

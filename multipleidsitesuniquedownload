@@ -1,0 +1,109 @@
+import requests
+import pandas as pd
+from datetime import datetime, timedelta
+
+# Function to generate a list of dates between two dates
+def generate_dates(start_date, end_date):
+    date_list = []
+    current_date = start_date
+    while current_date <= end_date:
+        date_list.append(current_date.strftime('%Y-%m-%d'))
+        current_date += timedelta(days=1)
+    return date_list
+
+# Function to fetch data from the API with a given date, offset, and idSite
+def fetch_data(date, offset, id_site):
+    url = f"https://demo.matomo.cloud/index.php?module=API&format=JSON&idSite={id_site}&period=day&date={date}&method=Live.getLastVisitsDetails&expanded=1&token_auth=anonymous&showColumns=actionDetails&filter_limit=10000&filter_offset={offset}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Failed to fetch data for idSite {id_site}, date {date} with offset {offset}")
+        return []
+
+# Main function
+def main():
+    # User inputs
+    start_date_str = input("Enter the starting date (YYYY-MM-DD): ")
+    end_date_str = input("Enter the ending date (YYYY-MM-DD): ")
+    max_offset = int(input("Enter the maximum number of visits in a day: "))
+    id_sites = input("Enter a list of idSite values, separated by commas: ").split(',')
+
+    # Parse dates
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+
+    # Generate list of dates
+    dates = generate_dates(start_date, end_date)
+
+    # Loop through each idSite
+    for id_site in id_sites:
+        id_site = id_site.strip()
+        print(f"Processing data for idSite {id_site}")
+
+        # Initialize a list to store concatenated data
+        all_data = []
+
+        # Loop through dates and fetch data with incremental offsets
+        for date in dates:
+            offset = 0
+            while offset <= max_offset:
+                data = fetch_data(date, offset, id_site)
+                if not data:
+                    break
+                all_data.extend(data)
+                offset += 10000
+
+        # Extract URLs and counts where type is 'download'
+        download_count = {}
+        unique_download_count = {}
+
+        for visit in all_data:
+            # Use a set to track unique downloads per visit
+            unique_urls_in_visit = set()
+            if 'actionDetails' in visit:
+                for action in visit['actionDetails']:
+                    if action.get('type') == 'download':
+                        url = action.get('url')
+                        if url in download_count:
+                            download_count[url] += 1
+                        else:
+                            download_count[url] = 1
+
+                        # Track unique download counts
+                        unique_urls_in_visit.add(url)
+
+            # Update unique download counts for this visit
+            for url in unique_urls_in_visit:
+                if url in unique_download_count:
+                    unique_download_count[url] += 1
+                else:
+                    unique_download_count[url] = 1
+
+        # Create DataFrame including total and unique counts
+        data = {
+            'URL': [],
+            'Unique': [],
+            'Total': []
+        }
+
+        for url, total_count in download_count.items():
+            data['URL'].append(url)
+            data['Unique'].append(unique_download_count.get(url, 0))
+            data['Total'].append(total_count)
+
+        df = pd.DataFrame(data)
+        df = df.sort_values(by='Total', ascending=False)
+
+        # Calculate total count and unique count, insert as first and last row
+        total_row = pd.DataFrame([['Total', df['Unique'].sum(), df['Total'].sum()]], columns=['URL', 'Unique', 'Total'])
+        df = pd.concat([total_row, df, total_row], ignore_index=True)
+
+        # Save to CSV with a file name specific to the idSite
+        output_path = f'download_totals_with_unique_idSite_{id_site}.csv'
+        df.to_csv(output_path, index=False)
+
+        print(f"CSV file for idSite {id_site} saved at: {output_path}")
+
+if __name__ == "__main__":
+    main()

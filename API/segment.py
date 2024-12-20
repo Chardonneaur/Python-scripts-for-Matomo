@@ -23,6 +23,12 @@ def process_tsv_data(tsv_data, idSite):
     rows = []
     lines = tsv_data.strip().split("\n")
     header = lines[0].split("\t")
+    
+    # Check if "idsegment" is in the header
+    if "idsegment" not in header:
+        print(f"No 'idsegment' column found for idSite {idSite}. Skipping...")
+        return rows
+    
     idsegment_idx = header.index("idsegment")
     name_idx = header.index("name")
     enable_only_idsite_idx = header.index("enable_only_idsite")
@@ -68,4 +74,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-	
